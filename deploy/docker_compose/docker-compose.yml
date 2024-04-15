@@ -1,0 +1,63 @@
+version: "3"
+
+services:
+  db:
+    image: docker.io/bitnami/postgresql:14
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRESQL_USERNAME=postgres
+      - POSTGRESQL_PASSWORD=postgres
+      - POSTGRESQL_EXTRA_FLAGS=-c work_mem=256MB -c maintenance_work_mem=256MB -c max_wal_size=1GB
+      - POSTGRESQL_DATABASE=ankidb
+    volumes:
+      - ankidata:/bitnami/postgresql
+  
+  redis:
+    image: redis
+    ports:
+      - '6379:6379'
+
+  web:
+      image: backend
+      build:
+        context: ../../.
+        args:
+          progress: plain
+        dockerfile: ./Dockerfile
+      environment:
+        - DB_URL=psql://postgres:postgres@db:5432/ankidb
+        - CELERY_REDIS_URL=redis://redis:6379/0
+      command: >
+        sh -c "python manage.py migrate &&
+             gunicorn --bind 0.0.0.0:8000 --timeout 6000 --workers=3 kaos.wsgi:application --log-level=debug"
+      ports:
+        - "8000:8000"
+      links:
+        - db
+      depends_on:
+        - db
+  
+  worker:
+    image: backend
+    build:
+      context: ../../.
+      args:
+        progress: plain
+      dockerfile: ./Dockerfile
+    environment:
+      - DB_URL=psql://postgres:postgres@db:5432/ankidb
+      - CELERY_REDIS_URL=redis://redis:6379/0
+    restart: on-failure
+    command: celery -A kaos worker --task-events -Q celery --beat --statedb worker_state.db --concurrency=1 -l info --prefetch-multiplier=1
+    volumes:
+      - .:/code
+    links:
+      - db
+    depends_on:
+      web:
+        condition: service_completed_successfully
+
+volumes:
+  ankidata:
+    driver: local

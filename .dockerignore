@@ -1,0 +1,10 @@
+git
+**/*.pyc
+/media
+.vscode/
+/staticfiles/
+/deploy/
+.pytest_cache/
+__pycache__/
+/static/
+Dockerfile**
