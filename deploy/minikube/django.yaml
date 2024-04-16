@@ -1,0 +1,112 @@
+
+# This defines the service and deployment for the django app.
+# The service is used to expose the app to the internet.
+apiVersion: v1
+kind: Service
+# metadata: Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create. annotations (object)
+#Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: http://kubernetes.io/docs/user-guide/annotations
+metadata:
+  # name (string)
+
+  # Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names
+  name: django
+  # Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: http://kubernetes.io/docs/user-guide/labels
+  labels:
+    app: django
+spec:
+  ports:
+    - port: 8000
+  selector:
+    app: django
+    tier: app
+  # type determines how the Service is exposed. Defaults to ClusterIP. Valid options are ExternalName, ClusterIP, NodePort, and LoadBalancer. "ExternalName" maps to the specified externalName. "ClusterIP" allocates a cluster-internal IP address for load-balancing to endpoints. Endpoints are determined by the selector or if that is not specified, by manual construction of an Endpoints object. If clusterIP is "None", no virtual IP is allocated and the endpoints are published as a set of endpoints rather than a stable IP. "NodePort" builds on ClusterIP and allocates a port on every node which routes to the clusterIP. "LoadBalancer" builds on NodePort and creates an external load-balancer (if supported in the current cloud) which routes to the clusterIP. More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services---service-types
+  type: LoadBalancer 
+
+
+
+---
+# This defines the persistent volume claim for the django app.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: django-app-pvc
+  labels:
+    app: django
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# This defines the deployment for the django app.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django
+  labels: 
+    app: django
+spec:
+  selector:
+    # matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
+    matchLabels:
+      app: django
+      tier: app
+  strategy:
+    # Type of deployment. Can be "Recreate" or "RollingUpdate". Default is RollingUpdate.
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: django
+        tier: app
+    spec:
+      volumes:
+        - name: django-app-data
+          persistentVolumeClaim:
+            claimName: django-app-pvc
+      containers:
+        - image: django-app:latest
+          imagePullPolicy: Never
+          name: app
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: 512Mi
+            requests:
+              cpu: "0.1"
+              memory: 256Mi
+          volumeMounts:
+            - name: django-app-data
+              mountPath: /vol/web
+          env:
+            - name: DB_URL
+              value: psql://postgres:postgres@django-postgres:5432/ankidb
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: django
+                  key: secret
+
+        - image: django-proxy:latest
+          imagePullPolicy: Never
+          name: proxy
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: 512Mi
+            requests:
+              cpu: "0.1"
+              memory: 256Mi
+          ports:
+            - containerPort: 8000
+              name: proxy
+          volumeMounts:
+            - name: django-app-data
+              mountPath: /vol/web
+          env:
+            - name: APP_HOST
+              value: '127.0.0.1'
+            - name: APP_PORT
+              value: '8080'
