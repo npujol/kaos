@@ -1,0 +1,17 @@
+# This section defines the secrets, this include the environment variables that should be secret
+secretGenerator:
+  - name: db-password
+    literals:
+      - password=postgres
+    
+  - name: django
+    literals:
+      - secret="django-insecure--s0-7fxjh_-1twk!+j3z@w=@=u99mw5)35(lyiux_pj8z-ld7l"
+
+# This section includes resources, which are yaml files that will be applied 
+# to kubernetes. In this case, 'db.yaml' and 'django.yaml' will be used.
+# These files are used to define services, deployments and persistent volume claims.
+# The resources will be applied in the order they are listed.
+resources:
+  - db.yaml # postgres database
+  - django.yaml # django app
