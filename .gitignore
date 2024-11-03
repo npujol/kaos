@@ -161,3 +161,5 @@ cython_debug/
 .direnv/*
 /static/
 /media/
+/data/*
+/-h
