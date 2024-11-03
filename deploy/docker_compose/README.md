@@ -1,19 +1,21 @@
 # Deploying with docker-compose
 
-## Requirements:
+## Requirements
+
 - [docker](https://docs.docker.com/)
 - [docker-compose](https://docs.docker.com/compose/install/)
-
 
 ## Steps
 
 1. Build the docker images
-```
+
+```bash
 docker-compose build
 ```
 
 2. Start docker-compose
-```
+
+```bash
 docker-compose up
 ```
 
