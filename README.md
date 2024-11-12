@@ -12,3 +12,8 @@
 
 - [Deploying with minikube](deploy/minikube/README.md)
 - [Deploying with docker-compose](deploy/docker_compose/README.md)
+- [Deploying with k3d](deploy/k3d/README.md)
+
+## TODO
+
+- [ ] Add nix shell
