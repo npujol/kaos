@@ -98,3 +98,22 @@ spec:
               value: '127.0.0.1'
             - name: APP_PORT
               value: '8080'
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: django-ingress
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - host: example.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  django
+                port:
+                  number: 8000
