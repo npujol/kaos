@@ -10,10 +10,7 @@ spec:
   selector:
     app: django
     tier: app
-  type: LoadBalancer 
-
-
-
+  type: LoadBalancer
 ---
 # This defines the persistent volume claim for the django app.
 apiVersion: v1
@@ -28,14 +25,13 @@ spec:
   resources:
     requests:
       storage: 5Gi
-
 ---
 # This defines the deployment for the django app.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: django
-  labels: 
+  labels:
     app: django
 spec:
   selector:
@@ -76,7 +72,6 @@ spec:
                 secretKeyRef:
                   name: django
                   key: secret
-
         - image: django-proxy:latest
           imagePullPolicy: Never
           name: proxy
@@ -107,13 +102,12 @@ metadata:
     ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
-    - host: example.net
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name:  django
+                name: django
                 port:
                   number: 8000
